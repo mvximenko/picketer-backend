@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
 const config = require('config');
 const User = require('../../models/User');
+const auth = require('../../middleware/auth');
+const checkObjectId = require('../../middleware/checkObjectId');
 
 // @route   POST api/users
 // @desc    Register user
@@ -13,6 +15,9 @@ router.post(
   '/',
   [
     check('name', 'Name is required').not().isEmpty(),
+    check('surname', 'Surname is required').not().isEmpty(),
+    check('patronymic', 'Patronymic is required').not().isEmpty(),
+    check('role', 'Role is required').not().isEmpty(),
     check('email', 'Please include a valid email').isEmail(),
     check(
       'password',
@@ -25,7 +30,7 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
+    const { name, surname, patronymic, role, email, password } = req.body;
 
     try {
       let user = await User.findOne({ email });
@@ -36,7 +41,7 @@ router.post(
           .json({ errors: [{ msg: 'User already exists' }] });
       }
 
-      user = new User({ name, email, password });
+      user = new User({ name, surname, patronymic, role, email, password });
 
       const salt = await bcrypt.genSalt(10);
 
@@ -65,5 +70,51 @@ router.post(
     }
   }
 );
+
+// @route   GET api/users
+// @desc    Get all users
+// @access  Public
+router.get('/', async (req, res) => {
+  try {
+    const user = await User.find().select('-password');
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   GET api/users/user/:user_id
+// @desc    Get user by ID
+// @access  Public
+router.get(
+  '/user/:user_id',
+  checkObjectId('user_id'),
+  async ({ params: { user_id } }, res) => {
+    try {
+      const user = await User.findOne({ _id: user_id }).select('-password');
+
+      if (!user) return res.status(400).json({ msg: 'User not found' });
+
+      return res.json(user);
+    } catch (err) {
+      console.error(err.message);
+      return res.status(500).json({ msg: 'Server error' });
+    }
+  }
+);
+
+// @route   DELETE api/users/user
+// @desc    Delete user
+// @access  Private
+router.delete('/user', auth, async (req, res) => {
+  try {
+    await User.findOneAndRemove({ _id: req.user.id });
+    res.json({ msg: 'User deleted' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
 
 module.exports = router;
