@@ -26,7 +26,7 @@ router.post(
       const newPost = new Post({
         text: req.body.text,
         location: req.body.location,
-        name: `${user.name} ${user.surname}`,
+        name: `${user.surname} ${user.name}`,
         user: req.user.id,
       });
 
@@ -41,10 +41,27 @@ router.post(
 );
 
 // @route   GET api/posts
-// @desc    Get all posts
+// @desc    Get posts for a specific date
+//          Get posts for a specific location
+//          Get all posts
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
+    if (req.query.date) {
+      const day = new Date(req.query.date);
+      const nextDay = new Date(day.getTime() + 1 * 24 * 60 * 60 * 1000);
+      const posts = await Post.find({ date: { $gte: day, $lte: nextDay } });
+      res.json(posts);
+      return;
+    }
+
+    if (req.query.location) {
+      const location = new RegExp(req.query.location, 'i');
+      const posts = await Post.find({ location });
+      res.json(posts);
+      return;
+    }
+
     const posts = await Post.find().sort({ date: -1 });
     res.json(posts);
   } catch (err) {
