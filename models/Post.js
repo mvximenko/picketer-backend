@@ -26,5 +26,7 @@ const PostSchema = new Schema({
   },
 });
 
-module.exports = Post = mongoose.model('post', PostSchema);
-module.exports = ArchivedPost = mongoose.model('archived_post', PostSchema);
+module.exports = {
+  Post: mongoose.model('post', PostSchema),
+  ArchivedPost: mongoose.model('archived_post', PostSchema),
+};

@@ -70,12 +70,41 @@ router.post(
 );
 
 // @route   GET api/users
-// @desc    Get all users
+// @desc    Get users for a specific surname, name and patronymic
+//          Get all users
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const user = await User.find().select('-password');
-    res.json(user);
+    if (req.query.name) {
+      const agg = User.aggregate([
+        {
+          $addFields: {
+            new_name: {
+              $concat: ['$surname', ' ', '$name', ' ', '$patronymic'],
+            },
+          },
+        },
+        {
+          $match: {
+            new_name: new RegExp(`${req.query.name}`, 'i'),
+          },
+        },
+        {
+          $project: {
+            new_name: 0,
+            password: 0,
+            __v: 0,
+          },
+        },
+      ]);
+
+      const users = await agg.exec();
+      res.json(users);
+      return;
+    }
+
+    const users = await User.find().select('-password');
+    res.json(users);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
