@@ -16,8 +16,9 @@ const PostSchema = new Schema({
   location: {
     type: String,
   },
-  status: {
-    type: String,
+  isActive: {
+    type: Boolean,
+    default: true,
   },
   date: {
     type: Date,
@@ -26,3 +27,4 @@ const PostSchema = new Schema({
 });
 
 module.exports = Post = mongoose.model('post', PostSchema);
+module.exports = ArchivedPost = mongoose.model('archived_post', PostSchema);

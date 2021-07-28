@@ -4,6 +4,7 @@ const { check, validationResult } = require('express-validator');
 const checkObjectId = require('../../middleware/checkObjectId');
 const auth = require('../../middleware/auth');
 const Post = require('../../models/Post');
+const ArchivedPost = require('../../models/Post');
 const User = require('../../models/User');
 
 // @route   POST api/posts
@@ -70,6 +71,34 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET api/posts/archive
+// @desc    Get all archived posts
+// @access  Private
+router.get('/archive', auth, async (req, res) => {
+  try {
+    const archivedPosts = await ArchivedPost.find().sort({ date: -1 });
+    res.json(archivedPosts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/posts/archive
+// @desc    Move post to archive
+// @access  Private
+router.put('/archive', auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.query.id);
+    const archivedPost = new ArchivedPost(post.toJSON());
+    post.remove();
+    archivedPost.save();
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 // @route   GET api/posts/:id
 // @desc    Get post by ID
 // @access  Private
@@ -84,7 +113,6 @@ router.get('/:id', [auth, checkObjectId('id')], async (req, res) => {
     res.json(post);
   } catch (err) {
     console.error(err.message);
-
     res.status(500).send('Server Error');
   }
 });
@@ -110,7 +138,6 @@ router.delete('/:id', [auth, checkObjectId('id')], async (req, res) => {
     res.json({ msg: 'Post removed' });
   } catch (err) {
     console.error(err.message);
-
     res.status(500).send('Server Error');
   }
 });
