@@ -160,6 +160,58 @@ router.get(
   }
 );
 
+// @route   PUT api/users/user
+// @desc    Edit user info as admin
+// @access  Private
+router.put(
+  '/user',
+  auth,
+  check('name', 'Name is required').notEmpty(),
+  check('surname', 'Surname is required').notEmpty(),
+  check('patronymic', 'Patronymic is required').notEmpty(),
+  check('role', 'Role is required').notEmpty(),
+  check('email', 'Please include a valid email').isEmail(),
+  check('password', 'Please enter a password with 6 or more characters')
+    .optional()
+    .isLength({ min: 6 }),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, surname, patronymic, role, email, password } = req.body;
+
+    try {
+      let user = await User.findOne({ email });
+
+      if (user.email !== email) {
+        return res
+          .status(409)
+          .json({ errors: [{ msg: 'This email is already registered' }] });
+      }
+
+      user.name = name;
+      user.surname = surname;
+      user.patronymic = patronymic;
+      user.role = role;
+      user.email = email;
+
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
+
+      await user.save();
+
+      res.status(200).send('OK');
+    } catch (err) {
+      console.error(err.message);
+      return res.status(500).json({ msg: 'Server error' });
+    }
+  }
+);
+
 // @route   DELETE api/users/user
 // @desc    Delete user
 // @access  Private

@@ -49,7 +49,7 @@ router.get('/', auth, async (req, res) => {
   try {
     if (req.query.date) {
       const day = new Date(req.query.date);
-      const nextDay = new Date(day.getTime() + 1 * 24 * 60 * 60 * 1000);
+      const nextDay = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       const posts = await Post.find({ date: { $gte: day, $lte: nextDay } });
       res.json(posts);
       return;
