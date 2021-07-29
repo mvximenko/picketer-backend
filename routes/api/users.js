@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
 const config = require('config');
-const User = require('../../models/User');
+const { User, ArchivedUser } = require('../../models/User');
 const auth = require('../../middleware/auth');
 const checkObjectId = require('../../middleware/checkObjectId');
 
@@ -105,6 +105,35 @@ router.get('/', async (req, res) => {
 
     const users = await User.find().select('-password');
     res.json(users);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   GET api/users/archive
+// @desc    Get all archived users
+// @access  Private
+router.get('/archive', auth, async (req, res) => {
+  try {
+    const archivedUsers = await ArchivedUser.find().sort({ date: -1 });
+    res.json(archivedUsers);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/users/archive
+// @desc    Move user to archive
+// @access  Private
+router.put('/archive', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.query.id);
+    const archivedUser = new ArchivedUser(user.toJSON());
+    user.remove();
+    archivedUser.save();
+    res.status(200).send('OK');
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

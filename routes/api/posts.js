@@ -4,7 +4,7 @@ const { check, validationResult } = require('express-validator');
 const checkObjectId = require('../../middleware/checkObjectId');
 const auth = require('../../middleware/auth');
 const { Post, ArchivedPost } = require('../../models/Post');
-const User = require('../../models/User');
+const { User } = require('../../models/User');
 
 // @route   POST api/posts
 // @desc    Create a post
@@ -92,6 +92,7 @@ router.put('/archive', auth, async (req, res) => {
     const archivedPost = new ArchivedPost(post.toJSON());
     post.remove();
     archivedPost.save();
+    res.status(200).send('OK');
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
