@@ -129,7 +129,7 @@ router.get('/archive', auth, async (req, res) => {
 // @access  Private
 router.put('/archive', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.query.id);
+    const user = await User.findById(req.body.id);
     const archivedUser = new ArchivedUser(user.toJSON());
     user.remove();
     archivedUser.save();

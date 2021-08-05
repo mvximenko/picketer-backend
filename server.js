@@ -6,7 +6,7 @@ const app = express();
 
 connectDB();
 
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({ origin: '*' }));
 app.use(express.json({ extended: false }));
 
 app.get('/', (req, res) => res.send('API Running'));

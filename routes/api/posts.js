@@ -47,23 +47,22 @@ router.post(
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    if (req.query.date) {
-      const day = new Date(req.query.date);
+    const { value } = req.query;
+    const day = new Date(value);
+    valid = !isNaN(day.valueOf()) && value.length === 10;
+
+    if (valid) {
       const nextDay = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       const posts = await Post.find({ date: { $gte: day, $lte: nextDay } });
       res.json(posts);
-      return;
-    }
-
-    if (req.query.location) {
-      const location = new RegExp(req.query.location, 'i');
+    } else if (value) {
+      const location = new RegExp(value, 'i');
       const posts = await Post.find({ location });
       res.json(posts);
-      return;
+    } else {
+      const posts = await Post.find().sort({ date: -1 });
+      res.json(posts);
     }
-
-    const posts = await Post.find().sort({ date: -1 });
-    res.json(posts);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
