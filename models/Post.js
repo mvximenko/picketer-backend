@@ -9,16 +9,21 @@ const PostSchema = new Schema({
   name: {
     type: String,
   },
-  text: {
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
     type: String,
     required: true,
   },
   location: {
     type: String,
+    required: true,
   },
-  isActive: {
+  done: {
     type: Boolean,
-    default: true,
+    default: false,
   },
   date: {
     type: Date,

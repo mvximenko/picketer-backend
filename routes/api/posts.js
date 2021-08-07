@@ -12,8 +12,9 @@ const { User } = require('../../models/User');
 router.post(
   '/',
   auth,
-  check('text', 'Text is required').notEmpty(),
+  check('title', 'Title is required').notEmpty(),
   check('location', 'Location is required').notEmpty(),
+  check('description', 'Description is required').notEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -24,8 +25,9 @@ router.post(
       const user = await User.findById(req.user.id).select('-password');
 
       const newPost = new Post({
-        text: req.body.text,
+        title: req.body.title,
         location: req.body.location,
+        description: req.body.description,
         name: `${user.surname} ${user.name}`,
         user: req.user.id,
       });
@@ -115,6 +117,42 @@ router.get('/:id', [auth, checkObjectId('id')], async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
+
+// @route   PUT api/posts/post
+// @desc    Edit post as admin
+// @access  Private
+router.put(
+  '/post',
+  auth,
+  check('title', 'Title is required').notEmpty(),
+  check('location', 'Location is required').notEmpty(),
+  check('done', 'Done is required').notEmpty(),
+  check('description', 'Description is required').notEmpty(),
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { _id, title, location, done, description } = req.body;
+
+    try {
+      let post = await Post.findById({ _id });
+
+      post.title = title;
+      post.location = location;
+      post.done = done;
+      post.description = description;
+
+      await post.save();
+      res.status(200).send('OK');
+    } catch (err) {
+      console.error(err.message);
+      return res.status(500).json({ msg: 'Server error' });
+    }
+  }
+);
 
 // @route   DELETE api/posts/:id
 // @desc    Delete a post
