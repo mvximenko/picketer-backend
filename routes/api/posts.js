@@ -89,7 +89,7 @@ router.get('/archive', auth, async (req, res) => {
 // @access  Private
 router.put('/archive', auth, async (req, res) => {
   try {
-    const post = await Post.findById(req.query.id);
+    const post = await Post.findById(req.body.id);
     const archivedPost = new ArchivedPost(post.toJSON());
     post.remove();
     archivedPost.save();
