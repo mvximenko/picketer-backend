@@ -212,6 +212,49 @@ router.put(
   }
 );
 
+// @route   PUT api/users/profile
+// @desc    Edit user info as user
+// @access  Private
+router.put(
+  '/profile',
+  auth,
+  check('name', 'Name is required').notEmpty(),
+  check('surname', 'Surname is required').notEmpty(),
+  check('patronymic', 'Patronymic is required').notEmpty(),
+  check('email', 'Please include a valid email').isEmail(),
+  check('password', 'Please enter a password with 6 or more characters')
+    .optional()
+    .isLength({ min: 6 }),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, surname, patronymic, email, password } = req.body;
+
+    try {
+      let user = await User.findOne({ email });
+
+      user.name = name;
+      user.surname = surname;
+      user.patronymic = patronymic;
+
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
+
+      await user.save();
+
+      res.status(200).send('OK');
+    } catch (err) {
+      console.error(err.message);
+      return res.status(500).json({ msg: 'Server error' });
+    }
+  }
+);
+
 // @route   DELETE api/users/user
 // @desc    Delete user
 // @access  Private
