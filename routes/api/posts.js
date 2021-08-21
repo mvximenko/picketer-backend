@@ -1,10 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
+const webpush = require('web-push');
+const config = require('config');
 const checkObjectId = require('../../middleware/checkObjectId');
 const auth = require('../../middleware/auth');
 const { Post, ArchivedPost } = require('../../models/Post');
 const { User } = require('../../models/User');
+const Subscription = require('../../models/Subscription');
+
+webpush.setVapidDetails(
+  'mailto:@test.com',
+  config.get('publicVapidKey'),
+  config.get('privateVapidKey')
+);
 
 // @route   POST api/posts
 // @desc    Create a post
@@ -35,6 +44,17 @@ router.post(
       const post = await newPost.save();
 
       res.json(post);
+
+      const { _id } = post;
+      const subscriptions = await Subscription.find({}).select('-_id -__v');
+
+      for (const subscription of subscriptions) {
+        const payload = JSON.stringify({
+          title: 'New Event',
+          primaryKey: `posts/${_id}`,
+        });
+        webpush.sendNotification(subscription, payload);
+      }
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server Error');
