@@ -46,14 +46,21 @@ router.post(
       res.json(post);
 
       const { _id } = post;
-      const subscriptions = await Subscription.find({}).select('-_id -__v');
+      const subscriptions = await Subscription.find({}).select('-__v');
 
       for (const subscription of subscriptions) {
+        const { _id: subId, _doc } = subscription;
+
         const payload = JSON.stringify({
           title: 'New Event',
           primaryKey: `posts/${_id}`,
         });
-        webpush.sendNotification(subscription, payload);
+
+        try {
+          await webpush.sendNotification(_doc, payload);
+        } catch (err) {
+          await Subscription.findById(subId).deleteOne();
+        }
       }
     } catch (err) {
       console.error(err.message);
