@@ -24,6 +24,7 @@ router.post(
   check('title', 'Title is required').notEmpty(),
   check('location', 'Location is required').notEmpty(),
   check('description', 'Description is required').notEmpty(),
+  check('picketer').optional(),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -39,6 +40,7 @@ router.post(
         description: req.body.description,
         name: `${user.surname} ${user.name}`,
         user: req.user.id,
+        picketer: req.body.picketer,
       });
 
       const post = await newPost.save();
@@ -153,8 +155,8 @@ router.put(
   auth,
   check('title', 'Title is required').notEmpty(),
   check('location', 'Location is required').notEmpty(),
-  check('done', 'Done is required').notEmpty(),
   check('description', 'Description is required').notEmpty(),
+  check('picketer').optional(),
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -162,15 +164,45 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { _id, title, location, done, description } = req.body;
+    const { _id, title, location, picketer, description } = req.body;
 
     try {
-      let post = await Post.findById({ _id });
+      let post = await Post.findById(_id);
 
       post.title = title;
       post.location = location;
-      post.done = done;
+      post.picketer = picketer;
       post.description = description;
+
+      await post.save();
+      res.status(200).send('OK');
+    } catch (err) {
+      console.error(err.message);
+      return res.status(500).json({ msg: 'Server error' });
+    }
+  }
+);
+
+// @route   PUT api/posts/picketer
+// @desc    Add picketer
+// @access  Private
+router.put(
+  '/picketer',
+  auth,
+  check('id', 'ID is required').notEmpty(),
+  check('email', 'Please include a valid email').isEmail(),
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id, email } = req.body;
+
+    try {
+      let post = await Post.findById(id);
+      post.picketer = email;
 
       await post.save();
       res.status(200).send('OK');

@@ -21,9 +21,9 @@ const PostSchema = new Schema({
     type: String,
     required: true,
   },
-  done: {
-    type: Boolean,
-    default: false,
+  picketer: {
+    type: String,
+    default: '',
   },
   date: {
     type: Date,
