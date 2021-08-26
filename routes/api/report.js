@@ -4,6 +4,9 @@ const auth = require('../../middleware/auth');
 const upload = require('../../middleware/multer');
 const Report = require('../../models/Report');
 
+// @route   POST api/report
+// @desc    Upload report
+// @access  Private
 router.post('/', auth, upload.array('images', 12), async (req, res) => {
   try {
     const reqFiles = [];
@@ -23,7 +26,10 @@ router.post('/', auth, upload.array('images', 12), async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+// @route   GET api/report
+// @desc    Get all reports
+// @access  Private
+router.get('/', auth, async (req, res) => {
   try {
     const reports = await Report.find();
     res.status(200).json(reports);

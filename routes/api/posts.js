@@ -5,6 +5,7 @@ const webpush = require('web-push');
 const config = require('config');
 const checkObjectId = require('../../middleware/checkObjectId');
 const auth = require('../../middleware/auth');
+const roles = require('../../middleware/roles');
 const { Post, ArchivedPost } = require('../../models/Post');
 const { User } = require('../../models/User');
 const Subscription = require('../../models/Subscription');
@@ -103,7 +104,7 @@ router.get('/', auth, async (req, res) => {
 // @route   GET api/posts/archive
 // @desc    Get all archived posts
 // @access  Private
-router.get('/archive', auth, async (req, res) => {
+router.get('/archive', auth, roles(['admin']), async (req, res) => {
   try {
     const archivedPosts = await ArchivedPost.find().sort({ date: -1 });
     res.json(archivedPosts);
@@ -116,7 +117,7 @@ router.get('/archive', auth, async (req, res) => {
 // @route   PUT api/posts/archive
 // @desc    Move post to archive
 // @access  Private
-router.put('/archive', auth, async (req, res) => {
+router.put('/archive', auth, roles(['admin']), async (req, res) => {
   try {
     const post = await Post.findById(req.body.id);
     const archivedPost = new ArchivedPost(post.toJSON());
@@ -132,7 +133,7 @@ router.put('/archive', auth, async (req, res) => {
 // @route   GET api/posts/:id
 // @desc    Get post by ID
 // @access  Private
-router.get('/:id', [auth, checkObjectId('id')], async (req, res) => {
+router.get('/:id', auth, checkObjectId('id'), async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
 
@@ -153,6 +154,7 @@ router.get('/:id', [auth, checkObjectId('id')], async (req, res) => {
 router.put(
   '/post',
   auth,
+  roles(['admin']),
   check('title', 'Title is required').notEmpty(),
   check('location', 'Location is required').notEmpty(),
   check('description', 'Description is required').notEmpty(),
@@ -216,26 +218,32 @@ router.put(
 // @route   DELETE api/posts/:id
 // @desc    Delete a post
 // @access  Private
-router.delete('/:id', [auth, checkObjectId('id')], async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
+router.delete(
+  '/:id',
+  auth,
+  roles(['admin']),
+  checkObjectId('id'),
+  async (req, res) => {
+    try {
+      const post = await Post.findById(req.params.id);
 
-    if (!post) {
-      return res.status(404).json({ msg: 'Post not found' });
+      if (!post) {
+        return res.status(404).json({ msg: 'Post not found' });
+      }
+
+      // Check user
+      if (post.user.toString() !== req.user.id) {
+        return res.status(401).json({ msg: 'User not authorized' });
+      }
+
+      await post.remove();
+
+      res.json({ msg: 'Post removed' });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
     }
-
-    // Check user
-    if (post.user.toString() !== req.user.id) {
-      return res.status(401).json({ msg: 'User not authorized' });
-    }
-
-    await post.remove();
-
-    res.json({ msg: 'Post removed' });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
   }
-});
+);
 
 module.exports = router;
