@@ -127,12 +127,12 @@ router.get('/archive', auth, roles(['admin']), async (req, res) => {
   }
 });
 
-// @route   PUT api/users/archive
+// @route   PUT api/users/archive/:id
 // @desc    Move user to archive
 // @access  Private
-router.put('/archive', auth, roles(['admin']), async (req, res) => {
+router.put('/archive/:id', auth, roles(['admin']), async (req, res) => {
   try {
-    const user = await User.findById(req.body.id);
+    const user = await User.findById(req.params.id);
     const archivedUser = new ArchivedUser(user.toJSON());
     user.remove();
     archivedUser.save();
