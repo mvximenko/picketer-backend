@@ -49,7 +49,7 @@ router.get('/', auth, async (req, res) => {
 router.put(
   '/send-report',
   auth,
-  roles['admin'],
+  roles(['admin']),
   check('to', 'Recipient is required').notEmpty(),
   check('subject', 'Subject is required').notEmpty(),
   check('text', 'Text is required').notEmpty(),
@@ -97,7 +97,7 @@ router.put(
       console.error(err.message);
       res.status(500).send('Server Error');
     }
-  }
+  },
 );
 
 module.exports = router;
