@@ -79,17 +79,24 @@ router.post(
 router.get('/', auth, roles(['admin']), async (req, res) => {
   try {
     if (req.query.name) {
+      const words = req.query.name.split(' ');
+
+      let pattern = '';
+      words.forEach((word) => {
+        pattern += `(?=.*${word})`;
+      });
+
       const agg = User.aggregate([
         {
           $addFields: {
             new_name: {
-              $concat: ['$surname', ' ', '$name', ' ', '$patronymic'],
+              $concat: ['$surname', '$name', '$patronymic'],
             },
           },
         },
         {
           $match: {
-            new_name: new RegExp(`${req.query.name}`, 'i'),
+            new_name: new RegExp(pattern, 'i'),
           },
         },
         {

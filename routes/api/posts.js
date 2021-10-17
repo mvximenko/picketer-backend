@@ -80,12 +80,12 @@ router.post(
 router.get('/', auth, async (req, res) => {
   try {
     const { value } = req.query;
-    const day = new Date(value);
-    valid = !isNaN(day.valueOf()) && value.length === 10;
+    const date = new Date(value);
+    valid = !isNaN(date.valueOf());
 
     if (valid) {
-      const nextDay = new Date(day.getTime() + 24 * 60 * 60 * 1000);
-      const posts = await Post.find({ date: { $gte: day, $lte: nextDay } });
+      const nextDay = new Date(date.getTime() + 24 * 60 * 60 * 1000);
+      const posts = await Post.find({ date: { $gte: date, $lte: nextDay } });
       res.json(posts);
     } else if (value) {
       const location = new RegExp(value, 'i');

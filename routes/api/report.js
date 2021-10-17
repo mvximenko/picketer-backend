@@ -12,6 +12,11 @@ const Report = require('../../models/Report');
 // @desc    Upload report
 // @access  Private
 router.post('/', auth, upload.array('images', 12), async (req, res) => {
+  if (req.files.length === 0) {
+    console.log('No file received or invalid file type');
+    return res.status(422).send('No file received or invalid file type');
+  }
+
   try {
     const reqFiles = [];
     const url = req.protocol + '://' + req.get('host');
@@ -97,7 +102,7 @@ router.put(
       console.error(err.message);
       res.status(500).send('Server Error');
     }
-  },
+  }
 );
 
 module.exports = router;
