@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
+const checkObjectId = require('../../middleware/checkObjectId');
 const config = require('config');
 const nodemailer = require('nodemailer');
 const auth = require('../../middleware/auth');
@@ -25,7 +26,14 @@ router.post('/', auth, upload.array('images', 12), async (req, res) => {
       reqFiles.push(url + '/public/' + file.filename);
     }
 
-    const report = new Report({ images: reqFiles });
+    const report = new Report({
+      images: reqFiles,
+      user: req.body.user,
+      post: req.body.post,
+      title: req.body.title,
+      picketer: req.body.picketer,
+    });
+
     const result = await report.save();
 
     res.json(result);
@@ -42,6 +50,38 @@ router.get('/', auth, async (req, res) => {
   try {
     const reports = await Report.find();
     res.status(200).json(reports);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   GET api/report/:id
+// @desc    Get report by ID
+// @access  Private
+router.get('/:id', auth, checkObjectId('id'), async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ msg: 'Report not found' });
+    }
+
+    res.json(report);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/report/:id
+// @desc    Delete report
+// @access  Private
+router.delete('/:id', auth, roles(['admin']), async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    report.remove();
+    res.status(200).send('OK');
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

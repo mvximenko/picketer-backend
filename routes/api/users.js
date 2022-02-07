@@ -11,7 +11,7 @@ const { User, ArchivedUser } = require('../../models/User');
 
 // @route   POST api/users
 // @desc    Register user
-// @access  Public
+// @access  Private
 router.post(
   '/',
   auth,
@@ -75,7 +75,7 @@ router.post(
 // @route   GET api/users
 // @desc    Get users for a specific surname, name and patronymic
 //          Get all users
-// @access  Public
+// @access  Private
 router.get('/', auth, roles(['admin']), async (req, res) => {
   try {
     if (req.query.name) {
@@ -152,7 +152,7 @@ router.put('/archive/:id', auth, roles(['admin']), async (req, res) => {
 
 // @route   GET api/users/user/:user_id
 // @desc    Get user by ID
-// @access  Public
+// @access  Private
 router.get(
   '/user/:user_id',
   auth,
