@@ -8,6 +8,8 @@ const auth = require('../../middleware/auth');
 const roles = require('../../middleware/roles');
 const upload = require('../../middleware/multer');
 const Report = require('../../models/Report');
+const { User } = require('../../models/User');
+const { Post } = require('../../models/Post');
 
 // @route   POST api/report
 // @desc    Upload report
@@ -67,7 +69,14 @@ router.get('/:id', auth, checkObjectId('id'), async (req, res) => {
       return res.status(404).json({ msg: 'Report not found' });
     }
 
-    res.json(report);
+    const post = await Post.findById(report.post).select(
+      '-_id -date -user -__v'
+    );
+    const user = await User.findById(report.user).select(
+      '-_id -password -date -__v'
+    );
+
+    res.json({ ...report.toObject(), ...post.toObject(), ...user.toObject() });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
@@ -98,6 +107,7 @@ router.put(
   check('to', 'Recipient is required').notEmpty(),
   check('subject', 'Subject is required').notEmpty(),
   check('text', 'Text is required').notEmpty(),
+  check('images', 'Images are required').notEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
 
@@ -105,7 +115,12 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { to, subject, text } = req.body;
+    const { to, subject, text, images } = req.body;
+
+    const attachments = images.map((image, index) => ({
+      filename: `${index}.${image.split('.').pop()}`,
+      path: `public/${image.split('/').pop()}`,
+    }));
 
     try {
       // Steps to use Gmail:
@@ -128,10 +143,12 @@ router.put(
         to,
         subject,
         text,
+        attachments,
       };
 
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
+          console.log(error);
           res.status(500).send('Server Error');
         } else {
           console.log('Email sent: ' + info.response);
