@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
+const webpush = require('web-push');
 const checkObjectId = require('../../middleware/checkObjectId');
 const config = require('config');
 const nodemailer = require('nodemailer');
@@ -50,7 +51,7 @@ router.post('/', auth, upload.array('images', 12), async (req, res) => {
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const reports = await Report.find();
+    const reports = await Report.find().sort({ date: -1 });
     res.status(200).json(reports);
   } catch (err) {
     console.error(err.message);
@@ -75,6 +76,14 @@ router.get('/:id', auth, checkObjectId('id'), async (req, res) => {
     const user = await User.findById(report.user).select(
       '-_id -password -date -__v'
     );
+
+    if (post === null) {
+      return res.json({ ...report.toObject(), ...user.toObject() });
+    }
+
+    if (user === null) {
+      return res.json({ ...report.toObject(), ...post.toObject() });
+    }
 
     res.json({ ...report.toObject(), ...post.toObject(), ...user.toObject() });
   } catch (err) {
@@ -107,6 +116,8 @@ router.put(
   check('to', 'Recipient is required').notEmpty(),
   check('subject', 'Subject is required').notEmpty(),
   check('text', 'Text is required').notEmpty(),
+  check('picketer', 'Picketer is required').notEmpty(),
+  check('title', 'Picketer is required').notEmpty(),
   check('images', 'Images are required').notEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
@@ -115,7 +126,7 @@ router.put(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { to, subject, text, images } = req.body;
+    const { to, subject, text, images, picketer, title } = req.body;
 
     const attachments = images.map((image, index) => ({
       filename: `${index}.${image.split('.').pop()}`,
@@ -146,15 +157,74 @@ router.put(
         attachments,
       };
 
-      transporter.sendMail(mailOptions, (error, info) => {
+      transporter.sendMail(mailOptions, async (error, info) => {
         if (error) {
           console.log(error);
           res.status(500).send('Server Error');
         } else {
           console.log('Email sent: ' + info.response);
           res.status(200).send('OK');
+
+          const { subscriptions } = await User.findOne({
+            email: picketer,
+          }).select('subscriptions');
+
+          for (const subscription of subscriptions) {
+            const payload = JSON.stringify({
+              title: `✔️Accepted: ${title}`,
+              primaryKey: '',
+            });
+            try {
+              await webpush.sendNotification(subscription, payload);
+            } catch (err) {
+              console.log(err);
+            }
+          }
         }
       });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server Error');
+    }
+  }
+);
+
+// @route   PUT api/report/reject-report
+// @desc    Reject report
+// @access  Private
+router.put(
+  '/reject-report',
+  auth,
+  roles(['admin']),
+  check('picketer', 'Picketer is required').notEmpty(),
+  check('title', 'Picketer is required').notEmpty(),
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { picketer, title } = req.body;
+
+    try {
+      const { subscriptions } = await User.findOne({ email: picketer }).select(
+        'subscriptions'
+      );
+
+      for (const subscription of subscriptions) {
+        const payload = JSON.stringify({
+          title: `❌Rejected: ${title}`,
+          primaryKey: '',
+        });
+
+        try {
+          await webpush.sendNotification(subscription, payload);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+      res.status(200).send('OK');
     } catch (err) {
       console.error(err.message);
       res.status(500).send('Server Error');

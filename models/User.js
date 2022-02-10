@@ -1,5 +1,22 @@
 const mongoose = require('mongoose');
 
+const SubscriptionSchema = new mongoose.Schema({
+  endpoint: {
+    type: String,
+  },
+  expirationTime: {
+    type: mongoose.Schema.Types.Mixed,
+  },
+  keys: {
+    p256dh: {
+      type: String,
+    },
+    auth: {
+      type: String,
+    },
+  },
+});
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -29,6 +46,10 @@ const UserSchema = new mongoose.Schema({
   date: {
     type: Date,
     default: Date.now,
+  },
+  subscriptions: {
+    type: [SubscriptionSchema],
+    default: [],
   },
 });
 

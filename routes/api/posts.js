@@ -8,7 +8,6 @@ const auth = require('../../middleware/auth');
 const roles = require('../../middleware/roles');
 const { Post, ArchivedPost } = require('../../models/Post');
 const { User } = require('../../models/User');
-const Subscription = require('../../models/Subscription');
 
 webpush.setVapidDetails(
   'mailto:@test.com',
@@ -49,20 +48,19 @@ router.post(
       res.json(post);
 
       const { _id } = post;
-      const subscriptions = await Subscription.find({}).select('-__v');
+
+      const subscriptions = await User.distinct('subscriptions');
 
       for (const subscription of subscriptions) {
-        const { _id: subId, _doc } = subscription;
-
         const payload = JSON.stringify({
           title: 'New Event',
-          primaryKey: `posts/${_id}`,
+          primaryKey: '',
         });
 
         try {
-          await webpush.sendNotification(_doc, payload);
+          await webpush.sendNotification(subscription, payload);
         } catch (err) {
-          await Subscription.findById(subId).deleteOne();
+          console.log(err);
         }
       }
     } catch (err) {

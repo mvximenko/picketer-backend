@@ -280,4 +280,37 @@ router.delete('/user', auth, roles(['admin']), async (req, res) => {
   }
 });
 
+// @route   PUT api/users/subscribe
+// @desc    Subscribe user
+// @access  Public
+router.put(
+  '/subscribe',
+  check('subscription', 'Endpoint is required').notEmpty(),
+  check('id', 'ID is required').notEmpty(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let user = await User.findById(req.body.id);
+
+      const subscription = {
+        endpoint: req.body.subscription.endpoint,
+        expirationTime: req.body.subscription.expirationTime,
+        keys: req.body.subscription.keys,
+      };
+
+      user.subscriptions.push(subscription);
+
+      await user.save();
+      res.status(200).send('Subscription created');
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Server error');
+    }
+  }
+);
+
 module.exports = router;
