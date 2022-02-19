@@ -92,7 +92,7 @@ router.get('/:id', auth, checkObjectId('id'), async (req, res) => {
   }
 });
 
-// @route   PUT api/report/:id
+// @route   DELETE api/report/:id
 // @desc    Delete report
 // @access  Private
 router.delete('/:id', auth, roles(['admin']), async (req, res) => {
@@ -113,11 +113,11 @@ router.put(
   '/send-report',
   auth,
   roles(['admin']),
-  check('to', 'Recipient is required').notEmpty(),
+  check('to', 'Email is required').notEmpty(),
   check('subject', 'Subject is required').notEmpty(),
   check('text', 'Text is required').notEmpty(),
   check('picketer', 'Picketer is required').notEmpty(),
-  check('title', 'Picketer is required').notEmpty(),
+  check('title', 'Title is required').notEmpty(),
   check('images', 'Images are required').notEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
