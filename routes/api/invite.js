@@ -39,7 +39,10 @@ router.post(
       });
 
       const subject = 'Picketer Invitation';
-      const text = `Your registration link: https://picketer.netlify.app/invite/${invitation.endpoint}`;
+      const text =
+        role === 'admin'
+          ? `Your registration link: https://picketer.netlify.app/invite/${invitation.endpoint}`
+          : `Your registration link: https://picketer-user.netlify.app/invite/${invitation.endpoint}`;
 
       const mailOptions = {
         from: config.get('email'),
@@ -87,7 +90,7 @@ router.post(
     const invitation = await Invitation.findOne({ endpoint: req.params.id });
 
     if (!invitation) {
-      return res.status(200).send('Invitation is not valid');
+      return res.status(400).send('Invitation is not valid');
     }
 
     try {
@@ -125,6 +128,8 @@ router.post(
           res.json({ token });
         }
       );
+
+      invitation.remove();
 
       res.status(200).send('User created');
     } catch (err) {

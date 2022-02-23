@@ -22,6 +22,10 @@ const userSchema = new Schema({
   },
   images: {
     type: Array,
+    default: [],
+  },
+  status: {
+    type: String,
   },
   date: {
     type: Date,

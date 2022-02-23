@@ -35,10 +35,34 @@ router.post('/', auth, upload.array('images', 12), async (req, res) => {
       post: req.body.post,
       title: req.body.title,
       picketer: req.body.picketer,
+      status: 'Success',
     });
 
     const result = await report.save();
 
+    res.json(result);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT api/posts/:id
+// @desc    Send failure report
+// @access  Private
+router.put('/fail/:id', auth, checkObjectId('id'), async (req, res) => {
+  try {
+    let post = await Post.findById(req.params.id);
+
+    const report = new Report({
+      user: post.user,
+      post: post._id,
+      title: post.title,
+      picketer: post.picketer,
+      status: 'Failed',
+    });
+
+    const result = await report.save();
     res.json(result);
   } catch (err) {
     console.error(err.message);
